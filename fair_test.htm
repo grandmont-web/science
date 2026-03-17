@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科學實驗：認識公平測試 (Fair Test)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
+        #canvas-container { width: 100%; height: 450px; border-radius: 0.5rem; overflow: hidden; background-color: #87CEEB; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
+        .fair-test-row { background-color: #dcfce7; }
+        .unfair-test-row { background-color: #fee2e2; }
+        
+        /* 自定義滑桿樣式 */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #eab308; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 2px solid #fff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #d1d5db; border-radius: 3px;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-thumb:hover { background: #ca8a04; transform: scale(1.1); }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-gray-800">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-amber-600 to-orange-500 text-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between border-b-4 border-amber-800">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">🌳 巨型彈弓：認識「公平測試」</h1>
+                <p class="text-amber-100">透過操作物理彈弓，觀察拉力、角度與重量的關係，學習如何進行精確的科學探究。</p>
+            </div>
+            <!-- SVG Graphic for Fair Test -->
+            <div class="mt-4 md:mt-0 bg-black/20 p-3 rounded-lg flex items-center space-x-4 border border-white/30 shadow-inner">
+                <svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="10" width="30" height="30" rx="4" fill="#fbbf24" stroke="#fff" stroke-width="2"/>
+                    <text x="20" y="55" font-size="10" fill="white" text-anchor="middle">改變</text>
+                    <path d="M 20 20 L 20 30 M 15 25 L 25 25" stroke="white" stroke-width="2"/>
+                    
+                    <rect x="45" y="10" width="30" height="30" rx="4" fill="#6b7280" stroke="#fff" stroke-width="2"/>
+                    <text x="60" y="55" font-size="10" fill="white" text-anchor="middle">固定</text>
+                    <rect x="53" y="18" width="14" height="14" fill="white"/>
+                    <circle x="60" y="25" r="3" fill="#6b7280"/>
+
+                    <rect x="85" y="10" width="30" height="30" rx="4" fill="#6b7280" stroke="#fff" stroke-width="2"/>
+                    <text x="100" y="55" font-size="10" fill="white" text-anchor="middle">固定</text>
+                    <rect x="93" y="18" width="14" height="14" fill="white"/>
+                    <circle x="100" y="25" r="3" fill="#6b7280"/>
+                </svg>
+                <div class="text-sm">
+                    <span class="font-bold text-amber-200">公平測試法則：</span><br>
+                    只改變<span class="text-white font-bold text-lg mx-1">1</span>個變數<br>保持其他變數<span class="text-gray-300 font-bold">不變</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Panel: Controls -->
+            <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-1 border-t-4 border-amber-500 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold mb-2 flex items-center"><span class="text-2xl mr-2">⚙️</span> 實驗設定面板</h2>
+                    <p class="text-sm text-gray-500 mb-6 pb-4 border-b">調整彈弓參數，觀察拋射的物理變化。你想測試哪個變數？</p>
+
+                    <div class="space-y-6">
+                        <!-- Variable 1: Tension -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="font-semibold text-gray-700">1. 橡皮筋拉力 (拉距)</label>
+                                <span class="text-amber-600 font-bold text-lg"><span id="val-tension">100</span> N</span>
+                            </div>
+                            <input type="range" id="var-tension" min="50" max="200" step="10" value="100">
+                            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>輕拉 (50)</span><span>極限張力 (200)</span></div>
+                        </div>
+
+                        <!-- Variable 2: Angle -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="font-semibold text-gray-700">2. 發射仰角</label>
+                                <span class="text-amber-600 font-bold text-lg"><span id="val-angle">45</span>°</span>
+                            </div>
+                            <input type="range" id="var-angle" min="15" max="75" step="5" value="45">
+                            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>平射 (15°)</span><span>高拋 (75°)</span></div>
+                        </div>
+
+                        <!-- Variable 3: Mass -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="font-semibold text-gray-700">3. 拋射物重量</label>
+                                <span class="text-amber-600 font-bold text-lg"><span id="val-mass">2.0</span> kg</span>
+                            </div>
+                            <input type="range" id="var-mass" min="0.5" max="5.0" step="0.5" value="2.0">
+                            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>輕 (0.5kg)</span><span>重 (5.0kg)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8">
+                    <button id="btn-launch" class="w-full bg-gradient-to-b from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-4 px-4 rounded-lg shadow-lg transform transition active:scale-95 text-xl flex justify-center items-center border border-red-800">
+                        <span class="mr-2">🖐️</span> 鬆開皮兜！發射！
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Simulation & Data -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 3D Canvas -->
+                <div class="bg-white p-2 rounded-xl shadow-md relative">
+                    <div id="status-overlay" class="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg shadow-sm text-lg font-bold text-gray-700 z-10 border border-gray-200">
+                        狀態：瞄準中...
+                    </div>
+                    <div id="distance-overlay" class="absolute top-4 right-4 bg-amber-100 border border-amber-400 text-amber-900 px-4 py-2 rounded-lg shadow-sm text-lg font-bold z-10 hidden transition-all">
+                        📏 飛行距離：<span id="final-distance" class="text-2xl">0</span> m
+                    </div>
+                    
+                    <div id="canvas-container"></div>
+                    
+                    <div class="flex justify-between items-center px-2 mt-2">
+                        <p class="text-xs text-gray-500">🖱️ 提示：按住左鍵旋轉視角，滾輪縮放，右鍵平移。</p>
+                        <button id="btn-reset-cam" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded transition">重設視角</button>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-green-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold flex items-center"><span class="text-2xl mr-2">📊</span> 實驗紀錄與分析</h2>
+                        <button id="btn-clear-records" class="text-sm bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md transition border border-red-200 flex items-center shadow-sm active:scale-95">
+                            <span class="mr-1">🗑️</span> 重新測試
+                        </button>
+                    </div>
+                    <div class="overflow-y-auto max-h-60 rounded border border-gray-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-gray-100 shadow-sm z-10">
+                                <tr>
+                                    <th class="p-3 border-b text-center">次數</th>
+                                    <th class="p-3 border-b text-center">拉力</th>
+                                    <th class="p-3 border-b text-center">角度</th>
+                                    <th class="p-3 border-b text-center">重量</th>
+                                    <th class="p-3 border-b text-center">飛行距離</th>
+                                    <th class="p-3 border-b">系統點評 (公平測試檢驗)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table-body" class="text-sm">
+                                <tr>
+                                    <td colspan="6" class="p-6 text-center text-gray-400 italic">尚未進行任何測試，設定參數並點擊「發射」開始記錄。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🧪 新增功能：實驗結論與歸納面板 -->
+        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-500">
+            <h2 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-2">🧠</span> 實驗結論：歸納物理關係</h2>
+            <p class="text-sm text-gray-500 mb-6">請根據上方的實驗數據，歸納出三個變數與「飛行距離」的關係，並點擊驗證。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Conclusion 1: Tension -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <label class="block font-bold text-purple-800 mb-2">1. 橡皮筋拉力</label>
+                    <p class="text-sm text-gray-700 mb-2">橡皮筋拉力越大，拋射物的飛行距離會：</p>
+                    <select id="deduce-tension" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="">-- 請選擇 --</option>
+                        <option value="farther">越來越遠</option>
+                        <option value="closer">越來越近</option>
+                        <option value="no_change">沒有變化</option>
+                    </select>
+                    <div id="feedback-tension" class="mt-2 text-sm font-semibold min-h-[40px]"></div>
+                </div>
+
+                <!-- Conclusion 2: Angle -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <label class="block font-bold text-purple-800 mb-2">2. 發射仰角</label>
+                    <p class="text-sm text-gray-700 mb-2">當發射仰角設定在幾度時，飛行距離最遠？</p>
+                    <select id="deduce-angle" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="">-- 請選擇 --</option>
+                        <option value="15">15° (平射)</option>
+                        <option value="45">45° (中等仰角)</option>
+                        <option value="75">75° (高拋)</option>
+                        <option value="more_farther">角度越大越遠</option>
+                    </select>
+                    <div id="feedback-angle" class="mt-2 text-sm font-semibold min-h-[40px]"></div>
+                </div>
+
+                <!-- Conclusion 3: Mass -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <label class="block font-bold text-purple-800 mb-2">3. 拋射物重量</label>
+                    <p class="text-sm text-gray-700 mb-2">拋射物的重量越重，飛行距離會：</p>
+                    <select id="deduce-mass" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="">-- 請選擇 --</option>
+                        <option value="farther">越來越遠</option>
+                        <option value="closer">越來越近</option>
+                        <option value="no_change">沒有變化</option>
+                    </select>
+                    <div id="feedback-mass" class="mt-2 text-sm font-semibold min-h-[40px]"></div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-center">
+                <button id="btn-verify" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transform transition active:scale-95 text-lg flex items-center">
+                    <span class="mr-2">✨</span> 驗證我的科學發現
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic (Three.js & Fair Test Logic) -->
+    <script>
+        // --- 1. UI 滑桿即時更新邏輯 ---
+        const inputs = ['tension', 'angle', 'mass'];
+        inputs.forEach(id => {
+            const slider = document.getElementById(`var-${id}`);
+            const display = document.getElementById(`val-${id}`);
+            slider.addEventListener('input', () => {
+                display.innerText = slider.value;
+                if (!isSimulating) updateSlingshotVisuals();
+            });
+        });
+
+        // --- 2. Three.js 場景設定 ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); 
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.006);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        
+        function resetCamera() {
+            camera.position.set(-15, 12, 25);
+            controls.target.set(10, 0, 0);
+            controls.update();
+        }
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; 
+        controls.minDistance = 5;
+        controls.maxDistance = 150;
+        resetCamera();
+
+        document.getElementById('btn-reset-cam').addEventListener('click', resetCamera);
+
+        // --- 3. 光照設計 ---
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6); 
+        hemiLight.position.set(0, 50, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffae6, 0.9);
+        dirLight.position.set(-20, 40, 30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.top = 40;
+        dirLight.shadow.camera.bottom = -40;
+        dirLight.shadow.camera.left = -40;
+        dirLight.shadow.camera.right = 100;
+        scene.add(dirLight);
+
+        // --- 4. 環境建立 ---
+        const groundGeo = new THREE.PlaneGeometry(400, 150);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x6b8e23, roughness: 1.0, metalness: 0.0 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 距離標示線
+        const gridMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+        for(let i = 10; i <= 150; i += 10) {
+            const points = [new THREE.Vector3(i, 0.1, -20), new THREE.Vector3(i, 0.1, 20)];
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geo, gridMat);
+            scene.add(line);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillRect(0,0,128,64);
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(i + ' m', 64, 45);
+            const tex = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: tex });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.position.set(i, 1.5, 20);
+            sprite.scale.set(5, 2.5, 1);
+            scene.add(sprite);
+        }
+
+        // 背景裝飾樹木
+        function createTree(x, z, scale) {
+            const treeGroup = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3), new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 1.0 }));
+            trunk.position.y = 1.5; trunk.castShadow = true; treeGroup.add(trunk);
+            const leaves = new THREE.Mesh(new THREE.DodecahedronGeometry(2), new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 }));
+            leaves.position.y = 3.5; leaves.castShadow = true; treeGroup.add(leaves);
+            treeGroup.position.set(x, 0, z); treeGroup.scale.set(scale, scale, scale);
+            scene.add(treeGroup);
+        }
+        createTree(-10, -15, 1.2); createTree(20, -20, 1.5); createTree(45, -10, 1.1); createTree(70, -25, 1.8);
+
+        // --- 5. 巨型彈弓 (Slingshot) 模型 ---
+        const slingshotGroup = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.9 }); 
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.4, metalness: 0.8 }); 
+        const rubberMat = new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.3 }); 
+        const pouchMat = new THREE.MeshStandardMaterial({ color: 0x2b1810, roughness: 1.0 });
+
+        // 主幹與分叉
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.0, 3.5), woodMat);
+        stem.position.set(0, 1.75, 0); stem.castShadow = true; slingshotGroup.add(stem);
+        
+        const joint = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), woodMat);
+        joint.position.set(0, 3.5, 0); slingshotGroup.add(joint);
+
+        const forkGeo = new THREE.CylinderGeometry(0.35, 0.6, 4.0);
+        const leftFork = new THREE.Mesh(forkGeo, woodMat);
+        leftFork.position.set(0, 5.2, 1.4); leftFork.rotation.x = Math.PI / 7; leftFork.castShadow = true;
+        slingshotGroup.add(leftFork);
+
+        const rightFork = new THREE.Mesh(forkGeo, woodMat);
+        rightFork.position.set(0, 5.2, -1.4); rightFork.rotation.x = -Math.PI / 7; rightFork.castShadow = true;
+        slingshotGroup.add(rightFork);
+
+        scene.add(slingshotGroup);
+
+        // 發射中心點與橡皮筋綁點 (精準動態計算)
+        slingshotGroup.updateMatrixWorld(true);
+        const forkTopLeft = new THREE.Vector3(0, 1.8, 0); // 取得左分叉頂部局部座標
+        leftFork.localToWorld(forkTopLeft);
+        const forkTopRight = new THREE.Vector3(0, 1.8, 0); // 取得右分叉頂部局部座標
+        rightFork.localToWorld(forkTopRight);
+        const releaseOrigin = new THREE.Vector3().addVectors(forkTopLeft, forkTopRight).multiplyScalar(0.5);
+
+        // 建立橡皮筋 (Pivot 結構，解決拉伸破圖問題)
+        function createBandPivot() {
+            const pivot = new THREE.Group();
+            const bandGeo = new THREE.CylinderGeometry(0.12, 0.12, 1, 8);
+            // 旋轉對齊 Z 軸，並向"前"平移，使其在 lookAt 模式下正確從起點延伸到終點
+            bandGeo.rotateX(Math.PI / 2); 
+            bandGeo.translate(0, 0, 0.5); 
+            const bandMesh = new THREE.Mesh(bandGeo, rubberMat);
+            bandMesh.castShadow = true;
+            pivot.add(bandMesh);
+            scene.add(pivot);
+            return pivot;
+        }
+        const leftBand = createBandPivot(); leftBand.position.copy(forkTopLeft);
+        const rightBand = createBandPivot(); rightBand.position.copy(forkTopRight);
+
+        // 皮兜
+        const pouchGeo = new THREE.BoxGeometry(0.15, 0.6, 1.4); // 厚度, 高度, 寬度
+        const pouch = new THREE.Mesh(pouchGeo, pouchMat);
+        pouch.castShadow = true;
+        scene.add(pouch);
+
+        // 拋射物
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.3, metalness: 0.2 });
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), ballMat);
+        ball.castShadow = true;
+        scene.add(ball);
+
+        // --- 6. 物理與動畫邏輯 ---
+        let isSimulating = false;
+        let animationPhase = 'idle'; // idle, snapping(回彈), flying, landed
+        let ballVelocity = new THREE.Vector3();
+        const gravity = 9.8;
+        let dt = 0.03;
+        
+        let targetAngleRad = 0;
+        let launchDir = new THREE.Vector3();
+        let currentPouchPos = new THREE.Vector3();
+        let currentV0 = 0;
+
+        // 更新皮兜、橡皮筋與球的位置
+        function updateSlingshotVisuals() {
+            if (animationPhase === 'flying' || animationPhase === 'landed') return;
+
+            const angleDeg = parseFloat(document.getElementById('var-angle').value);
+            targetAngleRad = angleDeg * (Math.PI / 180);
+            const tension = parseFloat(document.getElementById('var-tension').value);
+            const mass = parseFloat(document.getElementById('var-mass').value);
+
+            // 發射方向 (X-Y 平面)
+            launchDir.set(Math.cos(targetAngleRad), Math.sin(targetAngleRad), 0);
+
+            if (animationPhase === 'idle') {
+                // 待命時：根據拉力決定皮兜往後拉扯的距離 (往發射反方向拉)
+                const pullDist = 1.0 + (tension / 200) * 4.5;
+                currentPouchPos.copy(releaseOrigin).add(launchDir.clone().multiplyScalar(-pullDist));
+            }
+            // (若狀態為 snapping，currentPouchPos 會在 animate 迴圈中被更新)
+
+            // 更新皮兜：位置及傾斜度 (確保皮兜正面總是垂直於發射方向)
+            pouch.position.copy(currentPouchPos);
+            pouch.rotation.z = targetAngleRad;
+
+            // 完美的橡皮筋綁點：皮兜的左右兩側邊緣
+            const attachLeft = currentPouchPos.clone().add(new THREE.Vector3(0, 0, 0.6));
+            const attachRight = currentPouchPos.clone().add(new THREE.Vector3(0, 0, -0.6));
+
+            leftBand.lookAt(attachLeft);
+            leftBand.scale.z = forkTopLeft.distanceTo(attachLeft);
+            
+            rightBand.lookAt(attachRight);
+            rightBand.scale.z = forkTopRight.distanceTo(attachRight);
+
+            // 更新球體大小與位置 (確保球穩穩嵌在皮兜前方)
+            if (animationPhase !== 'flying') {
+                const scale = Math.pow(mass / 2.0, 1/3);
+                ball.scale.set(scale, scale, scale);
+                // 稍微往前推一點，免得跟皮革穿模
+                ball.position.copy(currentPouchPos).add(launchDir.clone().multiplyScalar(0.1 + scale * 0.3));
+            }
+        }
+
+        updateSlingshotVisuals();
+
+        function resetSimulation() {
+            animationPhase = 'idle';
+            isSimulating = false;
+            updateSlingshotVisuals();
+            document.getElementById('status-overlay').innerText = "狀態：瞄準中...";
+            document.getElementById('distance-overlay').classList.add('hidden');
+            
+            // 視角平滑歸位
+            const resetInterval = setInterval(() => {
+                camera.position.x += (-15 - camera.position.x) * 0.1;
+                controls.target.x += (10 - controls.target.x) * 0.1;
+                if(Math.abs(-15 - camera.position.x) < 0.1) clearInterval(resetInterval);
+            }, 30);
+        }
+
+        // --- 動畫主迴圈 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isSimulating) {
+                if (animationPhase === 'snapping') {
+                    // 皮兜急速回彈的物理表現
+                    const snapSpeed = 35.0; // 橡皮筋回彈速度極快
+                    const distToOrigin = currentPouchPos.distanceTo(releaseOrigin);
+
+                    if (distToOrigin < snapSpeed * dt) {
+                        // 抵達中心點，進入拋射階段
+                        currentPouchPos.copy(releaseOrigin);
+                        updateSlingshotVisuals(); // 最後更新一次皮兜停在中心
+                        
+                        animationPhase = 'flying';
+                        document.getElementById('status-overlay').innerText = "狀態：拋射中... ☄️";
+                        
+                        // 賦予球體初速度
+                        ballVelocity.copy(launchDir).multiplyScalar(currentV0);
+                    } else {
+                        // 沿著發射方向高速移動
+                        currentPouchPos.add(launchDir.clone().multiplyScalar(snapSpeed * dt));
+                        updateSlingshotVisuals();
+                    }
+                } 
+                else if (animationPhase === 'flying') {
+                    // 球體拋物線運動
+                    ball.position.add(ballVelocity.clone().multiplyScalar(dt));
+                    ballVelocity.y -= gravity * dt;
+
+                    // 攝影機流暢跟隨
+                    if(ball.position.x > camera.position.x + 15) {
+                        camera.position.x = ball.position.x - 15;
+                    }
+                    controls.target.set(ball.position.x, Math.max(0, ball.position.y - 5), 0);
+
+                    // 落地偵測
+                    const ballRadius = 0.4 * ball.scale.y;
+                    if (ball.position.y <= ballRadius) { 
+                        ball.position.y = ballRadius;
+                        animationPhase = 'landed';
+                        isSimulating = false;
+                        
+                        let finalDist = ball.position.x.toFixed(1);
+                        if (finalDist < 0) finalDist = 0;
+
+                        document.getElementById('status-overlay').innerText = "狀態：命中！ 🎯";
+                        document.getElementById('distance-overlay').classList.remove('hidden');
+                        document.getElementById('final-distance').innerText = finalDist;
+                        
+                        recordResult(currentConfig, finalDist);
+                        setTimeout(resetSimulation, 3500);
+                    }
+                }
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // --- 7. UI 操作與數據紀錄 ---
+        let results = [];
+        let currentConfig = {};
+        let testCount = 0;
+
+        // 加入清除紀錄與重新測試的邏輯
+        document.getElementById('btn-clear-records').addEventListener('click', () => {
+            if (isSimulating) return; // 避免在發射動畫進行中清除
+            results = [];
+            testCount = 0;
+            document.getElementById('results-table-body').innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-6 text-center text-gray-400 italic">尚未進行任何測試，設定參數並點擊「發射」開始記錄。</td>
+                </tr>
+            `;
+            
+            // 同時清除結論面板的狀態
+            ['tension', 'angle', 'mass'].forEach(id => {
+                document.getElementById(`deduce-${id}`).value = "";
+                document.getElementById(`feedback-${id}`).innerHTML = "";
+            });
+        });
+
+        document.getElementById('btn-launch').addEventListener('click', () => {
+            if (isSimulating || animationPhase !== 'idle') return;
+            
+            const tension = parseFloat(document.getElementById('var-tension').value);
+            const angleDeg = parseFloat(document.getElementById('var-angle').value);
+            const mass = parseFloat(document.getElementById('var-mass').value);
+
+            currentConfig = { tension, angle: angleDeg, mass };
+
+            // 計算初速度 (V0)：動能 = 彈力位能。能量轉換常數在此設定為 2.5 來強化視覺距離
+            const energyScale = 2.5; 
+            currentV0 = Math.sqrt((2 * tension * energyScale) / mass);
+
+            isSimulating = true;
+            animationPhase = 'snapping'; // 觸發皮兜急速回彈
+            document.getElementById('status-overlay').innerText = "狀態：釋放橡皮筋！";
+        });
+
+        function recordResult(config, distance) {
+            testCount++;
+            let analysisHtml = "";
+            let rowClass = "";
+
+            if (testCount === 1) {
+                analysisHtml = "<span class='text-gray-500 font-semibold'>首次測試 (作為基準)</span>";
+            } else {
+                const prev = results[results.length - 1];
+                let changedVars = [];
+                
+                if (prev.tension !== config.tension) changedVars.push("拉力");
+                if (prev.angle !== config.angle) changedVars.push("角度");
+                if (prev.mass !== config.mass) changedVars.push("重量");
+
+                if (changedVars.length === 0) {
+                    analysisHtml = "<span class='text-gray-500'>⚠️ 重複測試 (變數完全無改變)</span>";
+                } else if (changedVars.length === 1) {
+                    analysisHtml = `<span class='text-green-700 font-bold'>✅ 公平測試 (成功！只改變了「${changedVars[0]}」)</span>`;
+                    rowClass = "fair-test-row";
+                } else {
+                    analysisHtml = `<span class='text-red-600 font-bold'>❌ 不公平測試 (改變了 ${changedVars.length} 個變數：${changedVars.join(', ')})</span><br><span class='text-xs text-red-500'>無法得知是哪個變數導致了結果的改變。</span>`;
+                    rowClass = "unfair-test-row";
+                }
+            }
+
+            results.push({ ...config, distance });
+
+            const tbody = document.getElementById('results-table-body');
+            if (testCount === 1) tbody.innerHTML = ""; 
+
+            const tr = document.createElement('tr');
+            tr.className = `border-b hover:bg-gray-50 transition ${rowClass}`;
+            tr.innerHTML = `
+                <td class="p-3 font-bold text-center border-r text-gray-600">${testCount}</td>
+                <td class="p-3 text-center">${config.tension} N</td>
+                <td class="p-3 text-center">${config.angle}°</td>
+                <td class="p-3 text-center">${config.mass} kg</td>
+                <td class="p-3 font-bold text-amber-700 text-center text-lg">${distance} m</td>
+                <td class="p-3 leading-tight">${analysisHtml}</td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        }
+
+        // --- 8. 科學結論驗證邏輯 ---
+        document.getElementById('btn-verify').addEventListener('click', () => {
+            const valTension = document.getElementById('deduce-tension').value;
+            const valAngle = document.getElementById('deduce-angle').value;
+            const valMass = document.getElementById('deduce-mass').value;
+
+            // 檢查是否進行過對應的「公平測試」
+            let provedTension = false;
+            let provedAngle = false;
+            let provedMass = false;
+
+            for(let i = 0; i < results.length; i++) {
+                for(let j = i + 1; j < results.length; j++) {
+                    let r1 = results[i];
+                    let r2 = results[j];
+                    let diffT = r1.tension !== r2.tension;
+                    let diffA = r1.angle !== r2.angle;
+                    let diffM = r1.mass !== r2.mass;
+
+                    if (diffT && !diffA && !diffM) provedTension = true;
+                    if (!diffT && diffA && !diffM) provedAngle = true;
+                    if (!diffT && !diffA && diffM) provedMass = true;
+                }
+            }
+
+            // 驗證拉力 (正確：越來越遠)
+            const fbTension = document.getElementById('feedback-tension');
+            if (!valTension) {
+                fbTension.innerHTML = "<span class='text-gray-500'>請先選擇答案。</span>";
+            } else if (valTension === 'farther') {
+                fbTension.innerHTML = provedTension 
+                    ? "<span class='text-green-600'>✅ 完全正確！你的數據證明了這一點。</span>" 
+                    : "<span class='text-amber-600'>⚠️ 結論正確，但你還沒做過改變拉力的「公平測試」喔！猜測是不夠的。</span>";
+            } else {
+                fbTension.innerHTML = "<span class='text-red-500'>❌ 答錯囉，請再觀察一下數據或重新測試。</span>";
+            }
+
+            // 驗證角度 (正確：45度)
+            const fbAngle = document.getElementById('feedback-angle');
+            if (!valAngle) {
+                fbAngle.innerHTML = "<span class='text-gray-500'>請先選擇答案。</span>";
+            } else if (valAngle === '45') {
+                fbAngle.innerHTML = provedAngle 
+                    ? "<span class='text-green-600'>✅ 完全正確！你的數據證明了這一點。</span>" 
+                    : "<span class='text-amber-600'>⚠️ 結論正確，但你還沒做過改變角度的「公平測試」喔！</span>";
+            } else {
+                fbAngle.innerHTML = "<span class='text-red-500'>❌ 答錯囉，拋物線在45度時通常飛最遠。請重測看看！</span>";
+            }
+
+            // 驗證重量 (正確：越來越近)
+            const fbMass = document.getElementById('feedback-mass');
+            if (!valMass) {
+                fbMass.innerHTML = "<span class='text-gray-500'>請先選擇答案。</span>";
+            } else if (valMass === 'closer') {
+                fbMass.innerHTML = provedMass 
+                    ? "<span class='text-green-600'>✅ 完全正確！你的數據證明了這一點。</span>" 
+                    : "<span class='text-amber-600'>⚠️ 結論正確，但你還沒做過改變重量的「公平測試」喔！</span>";
+            } else {
+                fbMass.innerHTML = "<span class='text-red-500'>❌ 答錯囉，越重的東西越難被推遠。</span>";
+            }
+        });
+    </script>
+</body>
+</html>
