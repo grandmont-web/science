@@ -68,10 +68,19 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- Left Panel: Controls -->
-            <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-1 border-t-4 border-amber-500 flex flex-col justify-between">
+            <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-1 border-t-4 border-amber-500 flex flex-col">
                 <div>
-                    <h2 class="text-xl font-bold mb-2 flex items-center"><span class="text-2xl mr-2">⚙️</span> 實驗設定面板</h2>
-                    <p class="text-sm text-gray-500 mb-6 pb-4 border-b">調整彈弓參數，觀察拋射的物理變化。你想測試哪個變數？</p>
+                    <h2 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-2">⚙️</span> 實驗設定面板</h2>
+                    
+                    <!-- 新增：探究任務提示框 -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 shadow-sm">
+                        <h3 class="font-bold text-amber-900 mb-2 flex items-center text-md"><span class="mr-2">🎯</span> 本次探究任務：</h3>
+                        <ol class="list-decimal list-inside text-sm text-amber-800 space-y-1.5 font-medium">
+                            <li>橡皮筋<span class="font-bold text-amber-900 border-b border-amber-400 pb-0.5">拉力</span>與飛行距離的關係</li>
+                            <li>哪個<span class="font-bold text-amber-900 border-b border-amber-400 pb-0.5">發射仰角</span>的飛行距離最遠</li>
+                            <li>拋射物<span class="font-bold text-amber-900 border-b border-amber-400 pb-0.5">重量</span>與飛行距離的關係</li>
+                        </ol>
+                    </div>
 
                     <div class="space-y-6">
                         <!-- Variable 1: Tension -->
@@ -88,9 +97,9 @@
                         <div>
                             <div class="flex justify-between items-end mb-2">
                                 <label class="font-semibold text-gray-700">2. 發射仰角</label>
-                                <span class="text-amber-600 font-bold text-lg"><span id="val-angle">45</span>°</span>
+                                <span class="text-amber-600 font-bold text-lg"><span id="val-angle">35</span>°</span>
                             </div>
-                            <input type="range" id="var-angle" min="15" max="75" step="5" value="45">
+                            <input type="range" id="var-angle" min="15" max="75" step="5" value="35">
                             <div class="flex justify-between text-xs text-gray-400 mt-1"><span>平射 (15°)</span><span>高拋 (75°)</span></div>
                         </div>
 
@@ -106,7 +115,7 @@
                     </div>
                 </div>
 
-                <div class="pt-8">
+                <div class="mt-8 mb-2">
                     <button id="btn-launch" class="w-full bg-gradient-to-b from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-4 px-4 rounded-lg shadow-lg transform transition active:scale-95 text-xl flex justify-center items-center border border-red-800">
                         <span class="mr-2">🖐️</span> 鬆開皮兜！發射！
                     </button>
