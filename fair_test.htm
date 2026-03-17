@@ -146,7 +146,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold flex items-center"><span class="text-2xl mr-2">📊</span> 實驗紀錄與分析</h2>
                         <button id="btn-clear-records" class="text-sm bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md transition border border-red-200 flex items-center shadow-sm active:scale-95">
-                            <span class="mr-1">🗑️</span> 重新測試
+                            <span class="mr-1">🗑️</span> 重設測試
                         </button>
                     </div>
                     <div class="overflow-y-auto max-h-60 rounded border border-gray-200">
@@ -551,6 +551,19 @@
                 document.getElementById(`deduce-${id}`).value = "";
                 document.getElementById(`feedback-${id}`).innerHTML = "";
             });
+
+            // 還原滑桿與數值顯示為預設值
+            document.getElementById('var-tension').value = 100;
+            document.getElementById('val-tension').innerText = "100";
+            
+            document.getElementById('var-angle').value = 35;
+            document.getElementById('val-angle').innerText = "35";
+            
+            document.getElementById('var-mass').value = 2.0;
+            document.getElementById('val-mass').innerText = "2.0";
+
+            // 更新 3D 彈弓畫面回到預設狀態
+            updateSlingshotVisuals();
         });
 
         document.getElementById('btn-launch').addEventListener('click', () => {
